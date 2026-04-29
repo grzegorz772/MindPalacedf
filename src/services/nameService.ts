@@ -1,12 +1,12 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { FIRST_NAME_PART, SECOND_NAME_PART } from "../constants";
 
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
-
 export async function remixName(
+  apiKey: string,
   first: string, 
   second: string
 ): Promise<{ keepFirst: string[]; keepSecond: string[] }> {
+  const ai = new GoogleGenAI({ apiKey });
   try {
     const prompt = `
       You are a creative naming assistant for SSO Names.
@@ -27,10 +27,9 @@ export async function remixName(
       ${SECOND_NAME_PART.join(", ")}
     `;
 
-    const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash",
-      contents: prompt,
-      config: {
+    const response = await ai.getGenerativeModel({ model: "gemini-2.0-flash" }).generateContent({
+      contents: [{ role: "user", parts: [{ text: prompt }] }],
+      generationConfig: {
         responseMimeType: "application/json",
         responseSchema: {
           type: Type.OBJECT,
@@ -51,7 +50,7 @@ export async function remixName(
       },
     });
 
-    const text = response.text;
+    const text = response.response.text();
     if (!text) throw new Error("No response from AI");
 
     const json = JSON.parse(text) as { keepFirst: string[]; keepSecond: string[] };
@@ -79,10 +78,12 @@ export async function remixName(
   }
 }
 export async function generateName(
+  apiKey: string,
   userRequest: string, 
   count: number = 3,
   fixedFirst?: string
 ): Promise<Array<{ first: string; second: string; reasoning?: string }>> {
+  const ai = new GoogleGenAI({ apiKey });
   try {
     const prompt = `
       You are a creative naming assistant for horses.
@@ -107,10 +108,9 @@ export async function generateName(
       Return the result as a JSON array of objects, where each object has "first", "second", and "reasoning" properties.
     `;
 
-    const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash",
-      contents: prompt,
-      config: {
+    const response = await ai.getGenerativeModel({ model: "gemini-2.0-flash" }).generateContent({
+      contents: [{ role: "user", parts: [{ text: prompt }] }],
+      generationConfig: {
         responseMimeType: "application/json",
         responseSchema: {
           type: Type.ARRAY,
@@ -127,7 +127,7 @@ export async function generateName(
       },
     });
 
-    const text = response.text;
+    const text = response.response.text();
     
     if (!text) {
       throw new Error("No response from AI");

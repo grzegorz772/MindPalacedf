@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Sparkles, Wand2, AlertCircle, Moon, Sun, Palette, Crown, RefreshCw } from 'lucide-react';
+import { Sparkles, Wand2, AlertCircle, Moon, Sun, Palette, Crown, RefreshCw, Key, LogOut } from 'lucide-react';
 import { generateName, remixName } from '../services/nameService';
 
 type Theme = {
@@ -63,6 +63,11 @@ export default function NameGenerator() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   
+  // API Key State
+  const [apiKey, setApiKey] = useState<string | null>(() => localStorage.getItem('gemini_api_key'));
+  const [apiKeyInput, setApiKeyInput] = useState('');
+  const [showKeyModal, setShowKeyModal] = useState(!apiKey);
+
   // Remix State
   const [remixingIndex, setRemixingIndex] = useState<number | null>(null);
   const [remixes, setRemixes] = useState<Record<number, RemixData>>({});
@@ -83,9 +88,15 @@ export default function NameGenerator() {
     setResults(null);
     setRemixes({});
     
+    if (!apiKey) {
+      setShowKeyModal(true);
+      setLoading(false);
+      return;
+    }
+
     try {
       const fixedFirst = mode === 'old' ? 'Old' : undefined;
-      const data = await generateName(request, 3, fixedFirst);
+      const data = await generateName(apiKey, request, 3, fixedFirst);
       setResults(data);
     } catch (err) {
       console.error(err);
@@ -96,9 +107,13 @@ export default function NameGenerator() {
   };
 
   const handleRemix = async (index: number, first: string, second: string) => {
+    if (!apiKey) {
+      setShowKeyModal(true);
+      return;
+    }
     setRemixingIndex(index);
     try {
-      const data = await remixName(first, second);
+      const data = await remixName(apiKey, first, second);
       setRemixes(prev => ({ ...prev, [index]: data }));
     } catch (err) {
       console.error(err);
@@ -108,7 +123,21 @@ export default function NameGenerator() {
     }
   };
 
-  // Enhanced background animation variants
+  const saveApiKey = () => {
+    if (apiKeyInput.trim()) {
+      localStorage.setItem('gemini_api_key', apiKeyInput.trim());
+      setApiKey(apiKeyInput.trim());
+      setShowKeyModal(false);
+      setError(null);
+    }
+  };
+
+  const logoutKey = () => {
+    localStorage.removeItem('gemini_api_key');
+    setApiKey(null);
+    setApiKeyInput('');
+    setShowKeyModal(true);
+  };
   const bgVariants = {
     animate: {
       backgroundPosition: ['0% 0%', '100% 100%', '0% 100%', '0% 0%'],
@@ -135,6 +164,62 @@ export default function NameGenerator() {
   return (
     <div className={`min-h-screen w-full transition-colors duration-700 font-sans overflow-x-hidden relative flex flex-col ${darkMode ? 'bg-slate-950 text-slate-200' : 'bg-white text-gray-800'}`}>
       
+      {/* API Key Modal */}
+      <AnimatePresence>
+        {showKeyModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm"
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              className={`w-full max-w-md p-8 rounded-3xl shadow-2xl border ${darkMode ? 'bg-slate-900 border-slate-700 text-white' : 'bg-white border-white text-gray-800'}`}
+            >
+              <div className="flex items-center gap-3 mb-6">
+                <div className={`p-3 rounded-2xl ${theme.accent} bg-opacity-20`}>
+                  <Key className={`w-6 h-6 ${theme.primary}`} />
+                </div>
+                <h2 className="text-2xl font-bold font-display">Wprowadź API Key</h2>
+              </div>
+              
+              <p className="text-sm opacity-70 mb-6 leading-relaxed">
+                Aby generować imiona, potrzebujemy Twojego klucza Gemini API (Google AI Studio). Klucz zostanie zapisany bezpiecznie tylko w Twojej przeglądarce.
+              </p>
+
+              <div className="space-y-4">
+                <input
+                  type="password"
+                  value={apiKeyInput}
+                  onChange={(e) => setApiKeyInput(e.target.value)}
+                  placeholder="Klucz API..."
+                  className={`w-full px-5 py-4 rounded-2xl border-2 outline-none transition-all ${darkMode ? 'bg-slate-800 border-slate-700 focus:border-indigo-500' : 'bg-slate-50 border-gray-100 focus:border-rose-400'}`}
+                  onKeyDown={(e) => e.key === 'Enter' && saveApiKey()}
+                />
+                
+                <button
+                  onClick={saveApiKey}
+                  className={`w-full py-4 rounded-2xl font-bold shadow-lg bg-gradient-to-r ${theme.button} text-white transition-transform active:scale-95`}
+                >
+                  Zapisz i Kontynuuj
+                </button>
+                
+                <a 
+                  href="https://aistudio.google.com/app/apikey" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="block text-center text-xs font-semibold opacity-50 hover:opacity-100 transition-opacity"
+                >
+                  Skąd wziąć klucz? (Google AI Studio)
+                </a>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Dynamic Background with Mesh Gradient feel */}
       <motion.div 
         variants={bgVariants}
@@ -166,6 +251,15 @@ export default function NameGenerator() {
 
       {/* Header / Controls */}
       <div className="absolute top-4 right-4 z-50 flex gap-2">
+        <motion.button
+          whileHover={{ scale: 1.1 }}
+          whileTap={{ scale: 0.9 }}
+          onClick={logoutKey}
+          title="Zmień API Key"
+          className={`p-3 rounded-full shadow-lg backdrop-blur-md transition-colors border ${darkMode ? 'bg-slate-800/50 border-slate-700 text-slate-300 hover:bg-slate-700' : 'bg-white/40 border-white/40 text-gray-500 hover:bg-white/60'}`}
+        >
+          <Key className="w-5 h-5" />
+        </motion.button>
         <motion.button
           whileHover={{ scale: 1.1 }}
           whileTap={{ scale: 0.9 }}
