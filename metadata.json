@@ -1,0 +1,5 @@
+{
+  "name": "Generator Imion",
+  "description": "Aplikacja do generowania dwuczłonowych imion dla dziewczyn w oparciu o określone listy słów.",
+  "requestFramePermissions": []
+}
