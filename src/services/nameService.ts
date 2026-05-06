@@ -2,11 +2,14 @@ import { GoogleGenAI, Type } from "@google/genai";
 import { FIRST_NAME_PART, SECOND_NAME_PART } from "../constants";
 
 export async function remixName(
-  apiKey: string,
+  apiKey: string | null | undefined,
   first: string, 
   second: string
 ): Promise<{ keepFirst: string[]; keepSecond: string[] }> {
-  const ai = new GoogleGenAI({ apiKey });
+  const key = apiKey || process.env.GEMINI_API_KEY;
+  if (!key) throw new Error("Klucz API nie jest ustawiony. Podaj własny klucz w ustawieniach.");
+  const ai = new GoogleGenAI({ apiKey: key });
+
   try {
     const prompt = `
       You are a creative naming assistant for SSO Names.
@@ -27,9 +30,10 @@ export async function remixName(
       ${SECOND_NAME_PART.join(", ")}
     `;
 
-    const response = await ai.getGenerativeModel({ model: "gemini-2.0-flash" }).generateContent({
-      contents: [{ role: "user", parts: [{ text: prompt }] }],
-      generationConfig: {
+    const response = await ai.models.generateContent({
+      model: "gemini-3-flash-preview",
+      contents: prompt,
+      config: {
         responseMimeType: "application/json",
         responseSchema: {
           type: Type.OBJECT,
@@ -50,15 +54,14 @@ export async function remixName(
       },
     });
 
-    const text = response.response.text();
-    if (!text) throw new Error("No response from AI");
+    const text = response.text;
+    if (!text) throw new Error("Brak odpowiedzi od AI");
 
     const json = JSON.parse(text) as { keepFirst: string[]; keepSecond: string[] };
     
-    // Quick validation helper to extract correct casings and validate against the list
     const validatePair = (fullName: string): string => {
       const parts = fullName.trim().split(/\s+/);
-      if (parts.length < 2) return fullName; // Fallback if AI messes up format
+      if (parts.length < 2) return fullName;
       const fString = parts[0];
       const sString = parts.slice(1).join(" ");
       
@@ -72,18 +75,22 @@ export async function remixName(
       keepSecond: (json.keepSecond || []).map(validatePair).slice(0, 3)
     };
 
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error remixing name:", error);
-    throw error;
+    throw new Error(error.message || "Błąd podczas remiksowania imienia.");
   }
 }
+
 export async function generateName(
-  apiKey: string,
+  apiKey: string | null | undefined,
   userRequest: string, 
   count: number = 3,
   fixedFirst?: string
 ): Promise<Array<{ first: string; second: string; reasoning?: string }>> {
-  const ai = new GoogleGenAI({ apiKey });
+  const key = apiKey || process.env.GEMINI_API_KEY;
+  if (!key) throw new Error("Klucz API nie jest ustawiony. Podaj własny klucz w ustawieniach.");
+  const ai = new GoogleGenAI({ apiKey: key });
+
   try {
     const prompt = `
       You are a creative naming assistant for horses.
@@ -108,9 +115,10 @@ export async function generateName(
       Return the result as a JSON array of objects, where each object has "first", "second", and "reasoning" properties.
     `;
 
-    const response = await ai.getGenerativeModel({ model: "gemini-2.0-flash" }).generateContent({
-      contents: [{ role: "user", parts: [{ text: prompt }] }],
-      generationConfig: {
+    const response = await ai.models.generateContent({
+      model: "gemini-3-flash-preview",
+      contents: prompt,
+      config: {
         responseMimeType: "application/json",
         responseSchema: {
           type: Type.ARRAY,
@@ -119,7 +127,7 @@ export async function generateName(
             properties: {
               first: { type: Type.STRING },
               second: { type: Type.STRING },
-              reasoning: { type: Type.STRING },
+              reasoning: { type: Type.STRING, description: "Krótkie wyjaśnienie w języku polskim, dlaczego to imię pasuje do opisu." },
             },
             required: ["first", "second"],
           },
@@ -127,32 +135,20 @@ export async function generateName(
       },
     });
 
-    const text = response.response.text();
-    
-    if (!text) {
-      throw new Error("No response from AI");
-    }
+    const text = response.text;
+    if (!text) throw new Error("Brak odpowiedzi od AI");
 
     const json = JSON.parse(text) as Array<{ first: string; second: string; reasoning?: string }>;
     
-    if (!Array.isArray(json)) {
-      throw new Error("AI response is not an array");
-    }
+    if (!Array.isArray(json)) throw new Error("Nieprawidłowy format odpowiedzi AI");
 
-    // Validate strict adherence to lists (case-insensitive check)
     const validatedResults = json.map(item => {
       const first = item.first;
       const second = item.second;
       
-      // If fixedFirst is set, we strictly validate against it (case-insensitive)
       let validFirst: string | undefined;
-      
       if (fixedFirst) {
          if (first.toLowerCase() === fixedFirst.toLowerCase()) {
-            validFirst = fixedFirst; // Use the canonical casing if needed, or just what AI returned if it matches
-            // Actually, let's try to find it in the list to get canonical casing if possible, 
-            // but if fixedFirst is provided, we assume it's valid or we just use it.
-            // Since "Old" is in the list, we can find it.
             validFirst = FIRST_NAME_PART.find(w => w.toLowerCase() === fixedFirst.toLowerCase()) || fixedFirst;
          }
       } else {
@@ -162,10 +158,7 @@ export async function generateName(
       const validSecond = SECOND_NAME_PART.find(w => w.toLowerCase() === second.toLowerCase());
       
       if (!validFirst || !validSecond) {
-        console.warn("AI returned invalid words:", first, second);
-        // Instead of throwing immediately, we might filter this one out later? 
-        // But for now, let's throw to maintain strictness.
-        throw new Error(`AI selected invalid words: ${!validFirst ? first : ''} ${!validSecond ? second : ''}`);
+        throw new Error(`AI wybrało słowa spoza listy: ${!validFirst ? first : ''} ${!validSecond ? second : ''}`);
       }
       
       return {
@@ -177,8 +170,8 @@ export async function generateName(
 
     return validatedResults;
     
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error generating name:", error);
-    throw error;
+    throw new Error(error.message || "Błąd podczas generowania imienia.");
   }
 }

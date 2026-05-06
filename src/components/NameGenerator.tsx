@@ -88,29 +88,23 @@ export default function NameGenerator() {
     setResults(null);
     setRemixes({});
     
-    if (!apiKey) {
-      setShowKeyModal(true);
-      setLoading(false);
-      return;
+    if (!apiKey && showKeyModal) {
+      // Proceeding with default key
     }
 
     try {
       const fixedFirst = mode === 'old' ? 'Old' : undefined;
       const data = await generateName(apiKey, request, 3, fixedFirst);
       setResults(data);
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
-      setError("Nie udało się wygenerować imienia.");
+      setError(err.message || "Nie udało się wygenerować imienia.");
     } finally {
       setLoading(false);
     }
   };
 
   const handleRemix = async (index: number, first: string, second: string) => {
-    if (!apiKey) {
-      setShowKeyModal(true);
-      return;
-    }
     setRemixingIndex(index);
     try {
       const data = await remixName(apiKey, first, second);
@@ -176,17 +170,24 @@ export default function NameGenerator() {
             <motion.div
               initial={{ scale: 0.9, opacity: 0, y: 20 }}
               animate={{ scale: 1, opacity: 1, y: 0 }}
-              className={`w-full max-w-md p-8 rounded-3xl shadow-2xl border ${darkMode ? 'bg-slate-900 border-slate-700 text-white' : 'bg-white border-white text-gray-800'}`}
+              className={`w-full max-w-md p-8 rounded-3xl shadow-2xl border relative ${darkMode ? 'bg-slate-900 border-slate-700 text-white' : 'bg-white border-white text-gray-800'}`}
             >
+              <button 
+                onClick={() => setShowKeyModal(false)}
+                className="absolute top-4 right-4 p-2 opacity-50 hover:opacity-100 transition-opacity"
+              >
+                <LogOut className="w-5 h-5 rotate-180" />
+              </button>
+
               <div className="flex items-center gap-3 mb-6">
                 <div className={`p-3 rounded-2xl ${theme.accent} bg-opacity-20`}>
                   <Key className={`w-6 h-6 ${theme.primary}`} />
                 </div>
-                <h2 className="text-2xl font-bold font-display">Wprowadź API Key</h2>
+                <h2 className="text-2xl font-bold font-display">Klucz API</h2>
               </div>
               
               <p className="text-sm opacity-70 mb-6 leading-relaxed">
-                Aby generować imiona, potrzebujemy Twojego klucza Gemini API (Google AI Studio). Klucz zostanie zapisany bezpiecznie tylko w Twojej przeglądarce.
+                Aplikacja posiada domyślny klucz, ale możesz dodać własny (Google AI Studio), aby uniknąć limitów. Klucz zostanie zapisany tylko u Ciebie.
               </p>
 
               <div className="space-y-4">
@@ -194,17 +195,25 @@ export default function NameGenerator() {
                   type="password"
                   value={apiKeyInput}
                   onChange={(e) => setApiKeyInput(e.target.value)}
-                  placeholder="Klucz API..."
+                  placeholder="Twój klucz API (opcjonalnie)..."
                   className={`w-full px-5 py-4 rounded-2xl border-2 outline-none transition-all ${darkMode ? 'bg-slate-800 border-slate-700 focus:border-indigo-500' : 'bg-slate-50 border-gray-100 focus:border-rose-400'}`}
                   onKeyDown={(e) => e.key === 'Enter' && saveApiKey()}
                 />
                 
-                <button
-                  onClick={saveApiKey}
-                  className={`w-full py-4 rounded-2xl font-bold shadow-lg bg-gradient-to-r ${theme.button} text-white transition-transform active:scale-95`}
-                >
-                  Zapisz i Kontynuuj
-                </button>
+                <div className="flex gap-3">
+                  <button
+                    onClick={saveApiKey}
+                    className={`flex-1 py-4 rounded-2xl font-bold shadow-lg bg-gradient-to-r ${theme.button} text-white transition-transform active:scale-95`}
+                  >
+                    Zapisz klucz
+                  </button>
+                  <button
+                    onClick={() => setShowKeyModal(false)}
+                    className={`flex-1 py-4 rounded-2xl font-bold border transition-colors ${darkMode ? 'border-slate-700 hover:bg-slate-800' : 'border-gray-200 hover:bg-gray-50'}`}
+                  >
+                    Użyj domyślnego
+                  </button>
+                </div>
                 
                 <a 
                   href="https://aistudio.google.com/app/apikey" 
@@ -364,7 +373,7 @@ export default function NameGenerator() {
                   type="text"
                   value={request}
                   onChange={(e) => setRequest(e.target.value)}
-                  placeholder="Np. Szybki, odważny i mroczny rumak..."
+                  placeholder="Np. Galopujący po mroźnych szczytach, srebrzysty ogier..."
                   className={`relative w-full border-2 focus:border-opacity-100 rounded-2xl px-6 py-5 text-lg outline-none shadow-lg transition-all duration-300 ${darkMode ? 'bg-slate-900/80 border-slate-700 text-white placeholder-slate-500 focus:border-slate-500 focus:bg-slate-900' : 'bg-white/80 border-white/50 text-gray-800 placeholder-gray-400 focus:border-pink-300 focus:bg-white'}`}
                   onKeyDown={(e) => e.key === 'Enter' && handleGenerate()}
                 />
