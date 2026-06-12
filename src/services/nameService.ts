@@ -1,6 +1,48 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { FIRST_NAME_PART, SECOND_NAME_PART } from "../constants";
 
+interface GenerateParams {
+  contents: any;
+  config: any;
+}
+
+async function generateContentWithFallback(
+  ai: GoogleGenAI,
+  params: GenerateParams
+) {
+  const models = ["gemini-3.5-flash", "gemini-flash-latest", "gemini-3.1-flash-lite"];
+  let lastError: any = null;
+
+  for (const model of models) {
+    try {
+      console.log(`Attempting generation with model: ${model}`);
+      const response = await ai.models.generateContent({
+        model,
+        contents: params.contents,
+        config: params.config,
+      });
+      return response;
+    } catch (error: any) {
+      console.error(`Error with model ${model}:`, error);
+      lastError = error;
+    }
+  }
+
+  let friendlyMessage = "Błąd generowania. Wszystkie modele Gemini są obecnie przeciążone lub niedostępne.";
+  if (lastError) {
+    const rawMessage = lastError.message || String(lastError);
+    if (rawMessage.includes("503") || rawMessage.includes("UNAVAILABLE") || rawMessage.includes("high demand")) {
+      friendlyMessage = "Wszystkie modele Gemini są obecnie przeciążone (błąd 503). Spróbuj ponownie za chwilę.";
+    } else if (rawMessage.includes("API_KEY") || rawMessage.includes("403") || rawMessage.includes("invalid key")) {
+      friendlyMessage = "Klucz API jest nieprawidłowy, nieaktywny lub wygasł.";
+    } else {
+      friendlyMessage = `Błąd API: ${rawMessage}`;
+    }
+  }
+  
+  throw new Error(friendlyMessage);
+}
+
 export async function remixName(
   apiKey: string | null | undefined,
   first: string, 
@@ -8,7 +50,15 @@ export async function remixName(
 ): Promise<{ keepFirst: string[]; keepSecond: string[] }> {
   const key = apiKey || process.env.GEMINI_API_KEY;
   if (!key) throw new Error("Klucz API nie jest ustawiony. Podaj własny klucz w ustawieniach.");
-  const ai = new GoogleGenAI({ apiKey: key });
+  
+  const ai = new GoogleGenAI({ 
+    apiKey: key,
+    httpOptions: {
+      headers: {
+        'User-Agent': 'aistudio-build',
+      }
+    }
+  });
 
   try {
     const prompt = `
@@ -30,8 +80,7 @@ export async function remixName(
       ${SECOND_NAME_PART.join(", ")}
     `;
 
-    const response = await ai.models.generateContent({
-      model: "gemini-3.5-flash",
+    const response = await generateContentWithFallback(ai, {
       contents: prompt,
       config: {
         responseMimeType: "application/json",
@@ -89,7 +138,15 @@ export async function generateName(
 ): Promise<Array<{ first: string; second: string; reasoning?: string }>> {
   const key = apiKey || process.env.GEMINI_API_KEY;
   if (!key) throw new Error("Klucz API nie jest ustawiony. Podaj własny klucz w ustawieniach.");
-  const ai = new GoogleGenAI({ apiKey: key });
+  
+  const ai = new GoogleGenAI({ 
+    apiKey: key,
+    httpOptions: {
+      headers: {
+        'User-Agent': 'aistudio-build',
+      }
+    }
+  });
 
   try {
     const prompt = `
@@ -115,8 +172,7 @@ export async function generateName(
       Return the result as a JSON array of objects, where each object has "first", "second", and "reasoning" properties.
     `;
 
-    const response = await ai.models.generateContent({
-      model: "gemini-3.5-flash",
+    const response = await generateContentWithFallback(ai, {
       contents: prompt,
       config: {
         responseMimeType: "application/json",
