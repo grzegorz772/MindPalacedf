@@ -65,11 +65,11 @@ export default function NameGenerator() {
   
   // API Key State
   const [apiKey, setApiKey] = useState<string | null>(() => localStorage.getItem('gemini_api_key'));
-  const [apiKeyInput, setApiKeyInput] = useState('');
+  const [apiKeyInput, setApiKeyInput] = useState(localStorage.getItem('gemini_api_key') || '');
   const [showKeyModal, setShowKeyModal] = useState(!apiKey);
 
   // Remix State
-  const [remixingIndex, setRemixingIndex] = useState<number | null>(null);
+  const [remixingIndex, setRemixingIndex] = useState<{ index: number, part: 1 | 2 } | null>(null);
   const [remixes, setRemixes] = useState<Record<number, RemixData>>({});
   
   // Settings
@@ -104,8 +104,8 @@ export default function NameGenerator() {
     }
   };
 
-  const handleRemix = async (index: number, first: string, second: string) => {
-    setRemixingIndex(index);
+  const handleRemix = async (index: number, first: string, second: string, partToChange: 1 | 2) => {
+    setRemixingIndex({ index, part: partToChange });
     try {
       const data = await remixName(apiKey, first, second);
       setRemixes(prev => ({ ...prev, [index]: data }));
@@ -123,6 +123,10 @@ export default function NameGenerator() {
       setApiKey(apiKeyInput.trim());
       setShowKeyModal(false);
       setError(null);
+    } else {
+      localStorage.removeItem('gemini_api_key');
+      setApiKey(null);
+      setShowKeyModal(false);
     }
   };
 
@@ -190,40 +194,43 @@ export default function NameGenerator() {
                 Aplikacja posiada domyślny klucz, ale możesz dodać własny (Google AI Studio), aby uniknąć limitów. Klucz zostanie zapisany tylko u Ciebie.
               </p>
 
-              <div className="space-y-4">
+              <form onSubmit={(e) => { e.preventDefault(); saveApiKey(); }} className="space-y-4">
                 <input
+                  id="gemini-api-key"
+                  name="api-key"
                   type="password"
+                  autoComplete="current-password"
                   value={apiKeyInput}
                   onChange={(e) => setApiKeyInput(e.target.value)}
                   placeholder="Twój klucz API (opcjonalnie)..."
-                  className={`w-full px-5 py-4 rounded-2xl border-2 outline-none transition-all ${darkMode ? 'bg-slate-800 border-slate-700 focus:border-indigo-500' : 'bg-slate-50 border-gray-100 focus:border-rose-400'}`}
-                  onKeyDown={(e) => e.key === 'Enter' && saveApiKey()}
+                  className={`w-full px-5 py-4 rounded-2xl border-2 outline-none transition-all ${darkMode ? 'bg-slate-900 border-slate-700 text-white placeholder-slate-500 focus:border-indigo-500' : 'bg-slate-50 border-gray-100 focus:border-rose-400'}`}
                 />
                 
                 <div className="flex gap-3">
                   <button
-                    onClick={saveApiKey}
+                    type="submit"
                     className={`flex-1 py-4 rounded-2xl font-bold shadow-lg bg-gradient-to-r ${theme.button} text-white transition-transform active:scale-95`}
                   >
                     Zapisz klucz
                   </button>
                   <button
+                    type="button"
                     onClick={() => setShowKeyModal(false)}
                     className={`flex-1 py-4 rounded-2xl font-bold border transition-colors ${darkMode ? 'border-slate-700 hover:bg-slate-800' : 'border-gray-200 hover:bg-gray-50'}`}
                   >
                     Użyj domyślnego
                   </button>
                 </div>
-                
-                <a 
-                  href="https://aistudio.google.com/app/apikey" 
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                  className="block text-center text-xs font-semibold opacity-50 hover:opacity-100 transition-opacity"
-                >
-                  Skąd wziąć klucz? (Google AI Studio)
-                </a>
-              </div>
+              </form>
+              
+              <a 
+                href="https://aistudio.google.com/app/apikey" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="block mt-4 text-center text-xs font-semibold opacity-50 hover:opacity-100 transition-opacity"
+              >
+                Skąd wziąć klucz? (Google AI Studio)
+              </a>
             </motion.div>
           </motion.div>
         )}
@@ -461,23 +468,40 @@ export default function NameGenerator() {
                         )}
                       </div>
 
-                      {/* Remix Action */}
-                      <div className="pt-4 border-t border-current border-opacity-10 w-full flex flex-col items-center">
-                        <button
-                          onClick={() => handleRemix(index, result.first, result.second)}
-                          disabled={remixingIndex === index}
-                          className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold transition-all hover:scale-105 ${
-                            darkMode ? 'bg-slate-700 text-slate-200 hover:bg-slate-600' : 'bg-white/60 text-gray-700 hover:bg-white'
-                          }`}
-                        >
-                          <motion.div
-                            animate={{ rotate: remixingIndex === index ? 360 : 0 }}
-                            transition={{ duration: 1, repeat: remixingIndex === index ? Infinity : 0, ease: "linear" }}
+                      {/* Remix Actions */}
+                      <div className="pt-4 border-t border-current border-opacity-10 w-full flex flex-col gap-2 scale-90">
+                        <div className="flex gap-2 justify-center">
+                          <button
+                            onClick={() => handleRemix(index, result.first, result.second, 1)}
+                            disabled={!!remixingIndex}
+                            className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-[10px] font-bold transition-all hover:scale-105 ${
+                              darkMode ? 'bg-slate-700 text-slate-200 hover:bg-slate-600' : 'bg-white/60 text-gray-700 hover:bg-white'
+                            }`}
                           >
-                            <RefreshCw className="w-4 h-4" />
-                          </motion.div>
-                          Remix
-                        </button>
+                            <motion.div
+                              animate={{ rotate: remixingIndex?.index === index && remixingIndex?.part === 1 ? 360 : 0 }}
+                              transition={{ duration: 1, repeat: remixingIndex?.index === index && remixingIndex?.part === 1 ? Infinity : 0, ease: "linear" }}
+                            >
+                              <RefreshCw className="w-3 h-3" />
+                            </motion.div>
+                            Początek
+                          </button>
+                          <button
+                            onClick={() => handleRemix(index, result.first, result.second, 2)}
+                            disabled={!!remixingIndex}
+                            className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-[10px] font-bold transition-all hover:scale-105 ${
+                              darkMode ? 'bg-slate-700 text-slate-200 hover:bg-slate-600' : 'bg-white/60 text-gray-700 hover:bg-white'
+                            }`}
+                          >
+                            <motion.div
+                              animate={{ rotate: remixingIndex?.index === index && remixingIndex?.part === 2 ? 360 : 0 }}
+                              transition={{ duration: 1, repeat: remixingIndex?.index === index && remixingIndex?.part === 2 ? Infinity : 0, ease: "linear" }}
+                            >
+                              <RefreshCw className="w-3 h-3" />
+                            </motion.div>
+                            Końcówka
+                          </button>
+                        </div>
                       </div>
 
                       {/* Remix Results Extension */}
@@ -487,30 +511,57 @@ export default function NameGenerator() {
                             initial={{ opacity: 0, height: 0 }}
                             animate={{ opacity: 1, height: 'auto' }}
                             exit={{ opacity: 0, height: 0 }}
-                            className="w-full mt-4 flex flex-col gap-4 overflow-hidden"
+                            className="w-full mt-4 flex flex-col gap-3 overflow-hidden"
                           >
-                            {/* Keep First */}
-                            <div className={`p-4 rounded-xl text-center ${darkMode ? 'bg-slate-700/50' : 'bg-white/50'}`}>
-                              <span className={`text-[10px] uppercase font-bold tracking-wider mb-2 block opacity-70 ${theme.primary}`}>
-                                Z członem "{result.first}"
-                              </span>
-                              <div className="flex flex-col gap-1">
-                                {remixes[index].keepFirst.map((r, i) => (
-                                  <span key={i} className={`font-bold ${darkMode ? 'text-slate-200' : 'text-gray-800'}`}>{r}</span>
-                                ))}
+                            {/* Keep Second result (Change First) */}
+                            {remixes[index].keepSecond && (
+                              <div className={`p-3 rounded-2xl text-center ${darkMode ? 'bg-slate-700/50' : 'bg-white/50'}`}>
+                                <span className={`text-[9px] uppercase font-bold tracking-wider mb-1.5 block opacity-70 ${theme.primary}`}>
+                                  Nowy początek:
+                                </span>
+                                <div className="flex flex-col gap-1">
+                                  {remixes[index].keepSecond.map((r, i) => (
+                                    <button 
+                                      key={i} 
+                                      className={`text-sm font-bold hover:scale-105 transition-transform ${darkMode ? 'text-slate-200' : 'text-gray-800'}`}
+                                      onClick={() => {
+                                        const res = [...(results || [])];
+                                        const [f, s] = r.split(' ');
+                                        res[index] = { ...res[index], first: f, second: s };
+                                        setResults(res);
+                                      }}
+                                    >
+                                      {r}
+                                    </button>
+                                  ))}
+                                </div>
                               </div>
-                            </div>
-                            {/* Keep Second */}
-                            <div className={`p-4 rounded-xl text-center ${darkMode ? 'bg-slate-700/50' : 'bg-white/50'}`}>
-                              <span className={`text-[10px] uppercase font-bold tracking-wider mb-2 block opacity-70 ${theme.primary}`}>
-                                Z członem "{result.second}"
-                              </span>
-                              <div className="flex flex-col gap-1">
-                                {remixes[index].keepSecond.map((r, i) => (
-                                  <span key={i} className={`font-bold ${darkMode ? 'text-slate-200' : 'text-gray-800'}`}>{r}</span>
-                                ))}
+                            )}
+                            
+                            {/* Keep First result (Change Second) */}
+                            {remixes[index].keepFirst && (
+                              <div className={`p-3 rounded-2xl text-center ${darkMode ? 'bg-slate-700/50' : 'bg-white/50'}`}>
+                                <span className={`text-[9px] uppercase font-bold tracking-wider mb-1.5 block opacity-70 ${theme.primary}`}>
+                                  Nowa końcówka:
+                                </span>
+                                <div className="flex flex-col gap-1">
+                                  {remixes[index].keepFirst.map((r, i) => (
+                                    <button 
+                                      key={i} 
+                                      className={`text-sm font-bold hover:scale-105 transition-transform ${darkMode ? 'text-slate-200' : 'text-gray-800'}`}
+                                      onClick={() => {
+                                        const res = [...(results || [])];
+                                        const [f, s] = r.split(' ');
+                                        res[index] = { ...res[index], first: f, second: s };
+                                        setResults(res);
+                                      }}
+                                    >
+                                      {r}
+                                    </button>
+                                  ))}
+                                </div>
                               </div>
-                            </div>
+                            )}
                           </motion.div>
                         )}
                       </AnimatePresence>
