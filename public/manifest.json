@@ -28,7 +28,8 @@
       "purpose": "maskable"
     }
   ],
-  "start_url": "/",
+  "start_url": ".",
+  "scope": ".",
   "background_color": "#120a3a",
   "theme_color": "#120a3a",
   "display": "standalone",
