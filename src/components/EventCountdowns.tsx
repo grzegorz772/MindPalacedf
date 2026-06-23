@@ -242,6 +242,13 @@ export function EventCountdowns({ darkMode }: { darkMode: boolean }) {
         };
       });
 
+      // Sort primary events
+      calculatedPrim.sort((a, b) => {
+        if (a.isActive && !b.isActive) return -1;
+        if (!a.isActive && b.isActive) return 1;
+        return a.daysToStart - b.daysToStart;
+      });
+
       setCountdowns(calculatedPrim);
       setSecondaryCountdowns(calculatedSec);
     };

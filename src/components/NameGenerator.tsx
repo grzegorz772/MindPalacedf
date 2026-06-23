@@ -673,7 +673,7 @@ export default function NameGenerator() {
                 SSO Names
               </h1>
               <p className={`text-lg font-medium max-w-lg mx-auto ${darkMode ? 'text-slate-300' : 'text-gray-600'}`}>
-                Opisz wymarzonego wierzchowca, a my wygenerujemy dla niego idealne imię.
+                Describe your dream horse, and we will generate the perfect name for it.
               </p>
             </div>
 
