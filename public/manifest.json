@@ -1,0 +1,22 @@
+{
+  "short_name": "SSONames",
+  "name": "Generator Imion Koni SSO",
+  "description": "Generator magicznych imion dla Twoich koni w Star Stable Online wraz z licznikiem wydarzeń i festiwali.",
+  "icons": [
+    {
+      "src": "https://images.unsplash.com/photo-1553284965-83fd3e82fa52?w=192&h=192&fit=crop&crop=faces",
+      "sizes": "192x192",
+      "type": "image/jpeg"
+    },
+    {
+      "src": "https://images.unsplash.com/photo-1553284965-83fd3e82fa52?w=512&h=512&fit=crop&crop=faces",
+      "sizes": "512x512",
+      "type": "image/jpeg"
+    }
+  ],
+  "start_url": "/",
+  "background_color": "#120a3a",
+  "theme_color": "#120a3a",
+  "display": "standalone",
+  "orientation": "portrait"
+}
