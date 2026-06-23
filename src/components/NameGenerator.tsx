@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Sparkles, Wand2, AlertCircle, Moon, Sun, Palette, Crown, RefreshCw, Key, LogOut, Download, Smartphone, Monitor, Share, Plus, X, Check, Info } from 'lucide-react';
+import { Sparkles, Wand2, AlertCircle, Moon, Sun, Palette, Crown, RefreshCw, Key, LogOut, Download } from 'lucide-react';
 import { generateName, remixName } from '../services/nameService';
 import { EventCountdowns } from './EventCountdowns';
 
@@ -84,8 +84,6 @@ export default function NameGenerator() {
 
   // PWA / App Installation States
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
-  const [showInstallModal, setShowInstallModal] = useState(false);
-  const [installTab, setInstallTab] = useState<'ios' | 'android' | 'pc'>('ios');
   const [isAppInstalled, setIsAppInstalled] = useState(false);
 
   useEffect(() => {
@@ -101,16 +99,6 @@ export default function NameGenerator() {
 
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
     window.addEventListener('appinstalled', handleAppInstalled);
-
-    // Initial platform check for custom instruction tabs
-    const ua = navigator.userAgent.toLowerCase();
-    if (/iphone|ipad|ipod/.test(ua)) {
-      setInstallTab('ios');
-    } else if (/android/.test(ua)) {
-      setInstallTab('android');
-    } else {
-      setInstallTab('pc');
-    }
 
     // Check if running in standalone window (already installed)
     if (window.matchMedia('(display-mode: standalone)').matches || (navigator as any).standalone) {
@@ -134,10 +122,12 @@ export default function NameGenerator() {
         }
       } catch (err) {
         console.error("Installation request failed:", err);
-        setShowInstallModal(true);
+        alert("Na tym urządzeniu instalacja bezpośrednia nie jest możliwa. Jeśli chcesz dodać aplikację do ekranu głównego:\n\n• Safari (iOS/iPhone): Udostępnij -> Dodaj do ekranu początkowego\n• Chrome (Android/PC): Menu (3 kropki) -> Dodaj/Zainstaluj");
       }
+    } else if (isAppInstalled) {
+      alert("Aplikacja SSO Names jest już zainstalowana na Twoim urządzeniu i gotowa do użycia bezpośrednio z ekranu głównego!");
     } else {
-      setShowInstallModal(true);
+      alert("Aby dodać aplikację do ekranu głównego telefonu lub komputera:\n\n• Na iPhone (Safari): Kliknij Udostępnij -> 'Dodaj do ekranu początkowego'\n• Na Android/PC (Chrome): Kliknij ikonę trzech kropek w prawym górnym rogu przeglądarki i wybierz 'Zainstaluj aplikację' lub 'Dodaj do ekranu głównego'");
     }
   };
 
@@ -415,201 +405,7 @@ export default function NameGenerator() {
         )}
       </AnimatePresence>
 
-      {/* PWA High-Fidelity Installation Guide Modal (Liquid Glass style) */}
-      <AnimatePresence>
-        {showInstallModal && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md"
-          >
-            <motion.div
-              initial={{ scale: 0.95, y: 25, opacity: 0 }}
-              animate={{ scale: 1, y: 0, opacity: 1 }}
-              exit={{ scale: 0.95, y: 25, opacity: 0 }}
-              className={`w-full max-w-lg rounded-3xl p-6 shadow-2xl border relative overflow-hidden backdrop-blur-3xl ${
-                darkMode 
-                  ? 'bg-slate-950/70 border-white/10 text-white shadow-pink-500/10' 
-                  : 'bg-white/80 border-white/50 text-gray-800'
-              }`}
-            >
-              <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-pink-500 via-indigo-500 to-teal-500" />
-              
-              <button 
-                onClick={() => setShowInstallModal(false)}
-                className="absolute top-4 right-4 p-2 rounded-full hover:bg-white/10 transition-colors opacity-75 hover:opacity-100"
-              >
-                <X className="w-5 h-5" />
-              </button>
 
-              <div className="flex items-center gap-3 mb-4 mt-2">
-                <div className="p-2.5 rounded-2xl bg-gradient-to-tr from-pink-500/20 to-indigo-500/20 text-pink-500">
-                  <Smartphone className="w-6 h-6" />
-                </div>
-                <div>
-                  <h2 className="text-xl font-bold tracking-tight">SSO Names na Twój pulpit!</h2>
-                  <p className="text-xs opacity-60">Zainstaluj jako natywną aplikację w sekundy</p>
-                </div>
-              </div>
-
-              {/* Install trigger banner for supported devices */}
-              {deferredPrompt && (
-                <div className="mb-4 p-4 rounded-2xl bg-pink-500/10 border border-pink-500/20 flex items-center justify-between gap-3">
-                  <div className="text-xs">
-                    <p className="font-bold text-pink-400">Twoje urządzenie jest gotowe!</p>
-                    <p className="opacity-75">Kliknij poniższy przycisk, aby zainstalować bezpośrednio.</p>
-                  </div>
-                  <button
-                    onClick={() => {
-                      triggerPwaInstall();
-                      setShowInstallModal(false);
-                    }}
-                    className="px-4 py-2 bg-pink-500 text-white text-xs font-extrabold rounded-xl shadow-lg shadow-pink-500/20 hover:bg-pink-600 transition-transform active:scale-95 flex items-center gap-1 shrink-0"
-                  >
-                    <Download className="w-3.5 h-3.5" />
-                    Instaluj
-                  </button>
-                </div>
-              )}
-
-              {/* Install Option Tabs */}
-              <div className="flex border-b border-white/15 mb-4">
-                <button
-                  onClick={() => setInstallTab('ios')}
-                  className={`flex-1 pb-2 text-xs font-bold transition-all flex items-center justify-center gap-1.5 border-b-2 ${
-                    installTab === 'ios' 
-                      ? 'border-pink-500 text-pink-500' 
-                      : 'border-transparent opacity-60 hover:opacity-100'
-                  }`}
-                >
-                  <Smartphone className="w-3.5 h-3.5" />
-                  iPhone (iOS)
-                </button>
-                <button
-                  onClick={() => setInstallTab('android')}
-                  className={`flex-1 pb-2 text-xs font-bold transition-all flex items-center justify-center gap-1.5 border-b-2 ${
-                    installTab === 'android' 
-                      ? 'border-pink-500 text-pink-500' 
-                      : 'border-transparent opacity-60 hover:opacity-100'
-                  }`}
-                >
-                  <Smartphone className="w-3.5 h-3.5" />
-                  Android (Chrome)
-                </button>
-                <button
-                  onClick={() => setInstallTab('pc')}
-                  className={`flex-1 pb-2 text-xs font-bold transition-all flex items-center justify-center gap-1.5 border-b-2 ${
-                    installTab === 'pc' 
-                      ? 'border-pink-500 text-pink-500' 
-                      : 'border-transparent opacity-60 hover:opacity-100'
-                  }`}
-                >
-                  <Monitor className="w-3.5 h-3.5" />
-                  Komputer (PC/Mac)
-                </button>
-              </div>
-
-              {/* Tab Contents */}
-              <div className="space-y-4 max-h-[300px] overflow-y-auto pr-1">
-                {installTab === 'ios' && (
-                  <div className="space-y-3.5">
-                    <p className="text-xs leading-relaxed opacity-80">
-                      System iOS nie pozwala na bezpośrednią automatyczną instalację w tle. Aby dokonać instalacji na pulpicie Apple:
-                    </p>
-                    <div className="space-y-2.5">
-                      <div className="flex gap-3 items-start p-3 rounded-xl bg-white/5 border border-white/5">
-                        <span className="flex items-center justify-center w-5 h-5 rounded-full bg-pink-500/15 text-pink-400 text-xs font-black shrink-0 mt-0.5">1</span>
-                        <p className="text-xs opacity-90 leading-normal">
-                          Upewnij się, że przeglądasz tę aplikację w natywnej przeglądarce <strong>Safari</strong> (oraz w osobnym oknie Safari, a nie podglądzie).
-                        </p>
-                      </div>
-                      <div className="flex gap-3 items-start p-3 rounded-xl bg-white/5 border border-white/5">
-                        <span className="flex items-center justify-center w-5 h-5 rounded-full bg-pink-500/15 text-pink-400 text-xs font-black shrink-0 mt-0.5">2</span>
-                        <p className="text-xs opacity-90 leading-normal flex items-center gap-1.5 flex-wrap">
-                          Naciśnij ikonę <strong>Udostępnij</strong> <Share className="w-4 h-4 text-indigo-400 inline" /> na dolnym pasku narzędzi.
-                        </p>
-                      </div>
-                      <div className="flex gap-3 items-start p-3 rounded-xl bg-white/5 border border-white/5">
-                        <span className="flex items-center justify-center w-5 h-5 rounded-full bg-pink-500/15 text-pink-400 text-xs font-black shrink-0 mt-0.5">3</span>
-                        <p className="text-xs opacity-90 leading-normal flex items-center gap-1.5 flex-wrap">
-                          Przesuń listę i wybierz: <strong>Dodaj do ekranu początkowego</strong> <Plus className="w-4 h-4 text-pink-400 inline" />.
-                        </p>
-                      </div>
-                      <div className="flex gap-3 items-start p-3 rounded-xl bg-white/5 border border-white/5">
-                        <span className="flex items-center justify-center w-5 h-5 rounded-full bg-pink-500/15 text-pink-400 text-xs font-black shrink-0 mt-0.5">4</span>
-                        <p className="text-xs opacity-90 leading-normal">
-                          Zatwierdź klikając <strong>Dodaj</strong> w prawym górnym rogu. Gotowe! 🐎
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {installTab === 'android' && (
-                  <div className="space-y-3">
-                    <p className="text-xs leading-relaxed opacity-80">
-                      Większość telefonów z Androidem i Chrome wspiera błyskawiczną instalację:
-                    </p>
-                    <div className="space-y-2.5">
-                      <div className="flex gap-3 items-start p-3 rounded-xl bg-white/5 border border-white/5">
-                        <span className="flex items-center justify-center w-5 h-5 rounded-full bg-pink-500/15 text-pink-400 text-xs font-black shrink-0 mt-0.5">1</span>
-                        <p className="text-xs opacity-90">
-                          Kliknij przycisk <strong>„Zainstaluj”</strong> lub <strong>„Pobierz App”</strong> w nagłówku strony.
-                        </p>
-                      </div>
-                      <div className="flex gap-3 items-start p-3 rounded-xl bg-white/5 border border-white/5">
-                        <span className="flex items-center justify-center w-5 h-5 rounded-full bg-pink-500/15 text-pink-400 text-xs font-black shrink-0 mt-0.5">2</span>
-                        <p className="text-xs opacity-90">
-                          Jeśli to nie działa, kliknij ikonę menu przeglądarki Chrome (trzy kropki <span className="font-extrabold text-[#7c3aed]">⁝</span> w prawym górnym rogu).
-                        </p>
-                      </div>
-                      <div className="flex gap-3 items-start p-3 rounded-xl bg-white/5 border border-white/5">
-                        <span className="flex items-center justify-center w-5 h-5 rounded-full bg-pink-500/15 text-pink-400 text-xs font-black shrink-0 mt-0.5">3</span>
-                        <p className="text-xs opacity-90">
-                          Wybierz opcję <strong>„Zainstaluj aplikację”</strong> lub <strong>„Dodaj do ekranu głównego”</strong> z menu.
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {installTab === 'pc' && (
-                  <div className="space-y-3">
-                    <p className="text-xs leading-relaxed opacity-80">
-                      Komputery stacjonarne i laptopy z Chrome, Edge lub Opera mogą zainstalować SSO Names jako dedykowaną aplikację biurkową z własnym oknem:
-                    </p>
-                    <div className="space-y-2.5">
-                      <div className="flex gap-3 items-start p-3 rounded-xl bg-white/5 border border-white/5">
-                        <span className="flex items-center justify-center w-5 h-5 rounded-full bg-pink-500/15 text-pink-400 text-xs font-black shrink-0 mt-0.5">1</span>
-                        <p className="text-xs opacity-90 leading-normal">
-                          Spójrz na pasek adresu u góry ekranu przeglądarki. Po prawej stronie paska (zaraz obok gwiazdki zakładek) zobaczysz małą ikonkę <strong>instalacji/pobierania</strong> 🖥️.
-                        </p>
-                      </div>
-                      <div className="flex gap-3 items-start p-3 rounded-xl bg-white/5 border border-white/5">
-                        <span className="flex items-center justify-center w-5 h-5 rounded-full bg-pink-500/15 text-pink-400 text-xs font-black shrink-0 mt-0.5">2</span>
-                        <p className="text-xs opacity-90 leading-normal">
-                          Kliknij na nią i wybierz <strong>Instaluj</strong>. Alternatywnie wybierz menu przeglądarki <span className="text-pink-400 font-bold">⁝</span> i kliknij <strong>Instaluj aplikację SSO Names...</strong>
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* standalone notice */}
-              <div className="mt-5 pt-4 border-t border-white/10 flex items-center justify-between text-[11px] opacity-60">
-                <span className="flex items-center gap-1"><Info className="w-3.5 h-3.5 text-indigo-400" /> Aplikacja działa w trybie Offline</span>
-                {isAppInstalled ? (
-                  <span className="text-xs font-bold text-emerald-400 flex items-center gap-0.5"><Check className="w-3.5 h-3.5" /> Zainstalowano</span>
-                ) : (
-                  <span>Obsługuje PC, Android i iOS</span>
-                )}
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
 
       {/* Main Content */}
       <div className="flex-1 flex items-center justify-center p-4 md:p-8">
