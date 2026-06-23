@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Award, Sun, Ghost, Snowflake, Calendar, Clock, Sparkles } from 'lucide-react';
+import { Award, Sun, Ghost, Snowflake, Calendar, Clock, Sparkles, TreeDeciduous, PartyPopper } from 'lucide-react';
 
 interface FestivalRange {
   id: string;
@@ -44,8 +44,8 @@ const SSO_FESTIVALS: FestivalRange[] = [
   },
   {
     id: 'summer',
-    name: 'Summer Daze Festival',
-    englishName: 'Summer Daze',
+    name: 'Festiwal Letnich Dni (Summer Daze)',
+    englishName: 'Summer Daze Festival',
     icon: Sun,
     color: 'amber',
     gradient: 'from-amber-500/20 to-orange-500/10',
@@ -83,6 +83,36 @@ const SSO_FESTIVALS: FestivalRange[] = [
   }
 ];
 
+interface SecondaryFestival {
+  id: string;
+  englishName: string;
+  icon: React.ComponentType<any>;
+  getRange: (year: number) => { start: Date; end: Date };
+}
+
+const SECONDARY_FESTIVALS: SecondaryFestival[] = [
+  {
+    id: 'camp_western',
+    englishName: 'Camp Western',
+    icon: TreeDeciduous,
+    getRange: (year: number) => {
+      const start = getWednesdayOfMonth(year, 7, 1); // August (month index 7) 1st Wednesday
+      const end = new Date(start.getTime() + 28 * 24 * 60 * 60 * 1000); // 4 weeks
+      return { start, end };
+    }
+  },
+  {
+    id: 'new_year',
+    englishName: "New Year's Eve",
+    icon: PartyPopper,
+    getRange: (year: number) => {
+      const start = new Date(year, 11, 28, 0, 0, 0); // Dec 28
+      const end = new Date(year, 11, 31, 23, 59, 59); // Dec 31
+      return { start, end };
+    }
+  }
+];
+
 interface FestivalCountdown {
   id: string;
   name: string;
@@ -102,15 +132,28 @@ interface FestivalCountdown {
   festivalProgressText?: string;
 }
 
+interface SecondaryCountdown {
+  id: string;
+  englishName: string;
+  icon: React.ComponentType<any>;
+  isActive: boolean;
+  days: number;
+  hours: number;
+  minutes: number;
+  seconds: number;
+}
+
 export function EventCountdowns({ darkMode }: { darkMode: boolean }) {
   const [countdowns, setCountdowns] = useState<FestivalCountdown[]>([]);
+  const [secondaryCountdowns, setSecondaryCountdowns] = useState<SecondaryCountdown[]>([]);
 
   useEffect(() => {
     const calculateCountdowns = () => {
       const now = new Date();
       const currentYear = now.getFullYear();
 
-      const calculated = SSO_FESTIVALS.map(fest => {
+      // Primary countdowns
+      const calculatedPrim = SSO_FESTIVALS.map(fest => {
         let { start, end } = fest.getRange(currentYear);
         
         // If event ended this year, calculate for next year
@@ -168,7 +211,39 @@ export function EventCountdowns({ darkMode }: { darkMode: boolean }) {
         };
       });
 
-      setCountdowns(calculated);
+      // Secondary countdowns
+      const calculatedSec = SECONDARY_FESTIVALS.map(fest => {
+        let { start, end } = fest.getRange(currentYear);
+        
+        if (now > end) {
+          const nextYearRange = fest.getRange(currentYear + 1);
+          start = nextYearRange.start;
+          end = nextYearRange.end;
+        }
+
+        const isActive = now >= start && now <= end;
+        const targetDate = isActive ? end : start;
+        const diffMs = targetDate.getTime() - now.getTime();
+
+        const days = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+        const hours = Math.floor((diffMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+        const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+        const seconds = Math.floor((diffMs % (1000 * 60)) / 1000);
+
+        return {
+          id: fest.id,
+          englishName: fest.englishName,
+          icon: fest.icon,
+          isActive,
+          days: Math.max(0, days),
+          hours: Math.max(0, hours),
+          minutes: Math.max(0, minutes),
+          seconds: Math.max(0, seconds),
+        };
+      });
+
+      setCountdowns(calculatedPrim);
+      setSecondaryCountdowns(calculatedSec);
     };
 
     calculateCountdowns();
@@ -236,10 +311,10 @@ export function EventCountdowns({ darkMode }: { darkMode: boolean }) {
               {/* Event Name */}
               <div className="mb-4">
                 <h3 className={`font-bold font-display text-base leading-snug ${darkMode ? 'text-slate-100' : 'text-gray-800'}`}>
-                  {fest.name}
+                  {fest.englishName}
                 </h3>
                 <p className={`text-xs ${darkMode ? 'text-slate-400' : 'text-gray-500'}`}>
-                  {fest.englishName}
+                  {fest.name}
                 </p>
               </div>
 
@@ -362,6 +437,42 @@ export function EventCountdowns({ darkMode }: { darkMode: boolean }) {
           );
         })}
       </div>
+
+        {/* Secondary Events Section */}
+        <div className="mt-8 grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {[
+            { id: 'camp_western', englishName: 'Camp Western', icon: TreeDeciduous, desc: 'Sierpień • Bory Firgrove i płukanie złota' },
+            { id: 'new_year', englishName: "New Year's Eve", icon: PartyPopper, desc: 'Koniec Grudnia • Zimowa Wioska i fajerwerki' },
+          ].map((event, i) => {
+            const IconComponent = event.icon;
+            return (
+              <motion.div
+                key={event.id}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.1 + i * 0.1 }}
+                whileHover={{ y: -1 }}
+                className={`p-3.5 rounded-2xl border flex items-center gap-3.5 transition-all ${
+                  darkMode
+                    ? 'bg-slate-950/25 border-white/5 shadow-md hover:border-white/10'
+                    : 'bg-white/20 border-white/45 shadow-[0_4px_12px_rgba(31,38,135,0.01)] hover:border-white/65'
+                }`}
+              >
+                <div className={`p-2.5 rounded-xl ${darkMode ? 'bg-white/5 text-indigo-400' : 'bg-white/70 text-indigo-500 shadow-sm'}`}>
+                  <IconComponent className="w-5 h-5" />
+                </div>
+                <div>
+                  <h4 className={`text-sm font-bold tracking-tight ${darkMode ? 'text-slate-200' : 'text-gray-800'}`}>
+                    {event.englishName}
+                  </h4>
+                  <p className={`text-[11px] ${darkMode ? 'text-slate-500' : 'text-gray-500'}`}>
+                    {event.desc}
+                  </p>
+                </div>
+              </motion.div>
+            );
+          })}
+        </div>
     </div>
   );
 }

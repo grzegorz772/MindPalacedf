@@ -7,49 +7,64 @@ import { EventCountdowns } from './EventCountdowns';
 type Theme = {
   name: string;
   gradient: string;
+  darkGradient: string;
   primary: string;
   secondary: string;
   accent: string;
   button: string;
-  darkGradient: string;
+  bgStart: string;
+  bgMiddle: string;
+  bgEnd: string;
+  cardBg: string;
+  cardBorder: string;
+  blobColors: string[];
 };
 
 const THEMES: Record<string, Theme> = {
-  rose: {
-    name: "Różany Ogród",
-    gradient: "from-pink-200 via-rose-200 to-purple-200",
-    darkGradient: "from-pink-900/40 via-rose-900/40 to-purple-900/40",
-    primary: "text-rose-600",
-    secondary: "text-purple-600",
-    accent: "bg-rose-400",
-    button: "from-rose-500 to-purple-600 hover:from-rose-600 hover:to-purple-700",
+  cosmic: {
+    name: "Kosmiczny Ametyst",
+    gradient: "from-[#0d0121] via-[#09041a] to-[#02000d]",
+    darkGradient: "from-purple-900/40 via-indigo-900/40 to-pink-900/40",
+    primary: "text-purple-400",
+    secondary: "text-[#df1380]",
+    accent: "bg-[#df1380]",
+    button: "from-purple-600 via-indigo-600 to-pink-600 hover:from-purple-500 hover:via-indigo-500 hover:to-pink-500 hover:shadow-[0_0_24px_rgba(168,85,247,0.4)]",
+    bgStart: "#1a082e",
+    bgMiddle: "#0f0729",
+    bgEnd: "#060114",
+    cardBg: "bg-[#140b2a]/65 border-purple-500/25 shadow-[0_16px_36px_rgba(168,85,247,0.1)]",
+    cardBorder: "border-purple-500/25",
+    blobColors: ["#df1380", "#8b5cf6", "#d946ef", "#4f46e5"]
   },
-  lavender: {
-    name: "Lawendowy Sen",
-    gradient: "from-indigo-200 via-purple-200 to-pink-200",
-    darkGradient: "from-indigo-900/40 via-purple-900/40 to-pink-900/40",
-    primary: "text-indigo-600",
-    secondary: "text-pink-600",
-    accent: "bg-indigo-400",
-    button: "from-indigo-500 to-pink-600 hover:from-indigo-600 hover:to-pink-700",
-  },
-  mint: {
-    name: "Miętowa Świeżość",
-    gradient: "from-teal-200 via-emerald-200 to-cyan-200",
+  aurora: {
+    name: "Zorza Polarna",
+    gradient: "from-[#011411] via-[#010c10] to-[#000508]",
     darkGradient: "from-teal-900/40 via-emerald-900/40 to-cyan-900/40",
-    primary: "text-teal-600",
-    secondary: "text-cyan-600",
-    accent: "bg-teal-400",
-    button: "from-teal-500 to-cyan-600 hover:from-teal-600 hover:to-cyan-700",
+    primary: "text-emerald-400",
+    secondary: "text-teal-400",
+    accent: "bg-emerald-500",
+    button: "from-emerald-600 via-teal-600 to-cyan-500 hover:from-emerald-500 hover:via-teal-500 hover:to-cyan-400 hover:shadow-[0_0_24px_rgba(16,185,129,0.4)]",
+    bgStart: "#03281f",
+    bgMiddle: "#051f1f",
+    bgEnd: "#020a10",
+    cardBg: "bg-[#061e1a]/65 border-emerald-500/25 shadow-[0_16px_36px_rgba(16,185,129,0.1)]",
+    cardBorder: "border-emerald-500/25",
+    blobColors: ["#10b981", "#06b6d4", "#14b8a6", "#0284c7"]
   },
-  peach: {
-    name: "Brzoskwiniowy Sad",
-    gradient: "from-orange-200 via-amber-200 to-yellow-200",
-    darkGradient: "from-orange-900/40 via-amber-900/40 to-yellow-900/40",
-    primary: "text-orange-600",
-    secondary: "text-amber-600",
-    accent: "bg-orange-400",
-    button: "from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700",
+  sunset: {
+    name: "Płonący Zachód",
+    gradient: "from-[#1d010b] via-[#10040d] to-[#050005]",
+    darkGradient: "from-rose-900/40 via-orange-900/40 to-amber-900/40",
+    primary: "text-rose-400",
+    secondary: "text-amber-500",
+    accent: "bg-rose-500",
+    button: "from-rose-600 via-pink-600 to-amber-500 hover:from-rose-500 hover:via-pink-500 hover:to-amber-400 hover:shadow-[0_0_24px_rgba(244,63,94,0.4)]",
+    bgStart: "#350915",
+    bgMiddle: "#1c0715",
+    bgEnd: "#0d0107",
+    cardBg: "bg-[#250913]/65 border-rose-500/25 shadow-[0_16px_36px_rgba(244,63,94,0.1)]",
+    cardBorder: "border-rose-500/25",
+    blobColors: ["#f43f5e", "#f59e0b", "#ef4444", "#ea580c"]
   }
 };
 
@@ -68,18 +83,15 @@ export default function NameGenerator() {
   const [apiKey, setApiKey] = useState<string | null>(() => localStorage.getItem('gemini_api_key'));
   const [apiKeyInput, setApiKeyInput] = useState(localStorage.getItem('gemini_api_key') || '');
   const [showKeyModal, setShowKeyModal] = useState(!apiKey);
-
+  
   // Remix State
   const [remixingIndex, setRemixingIndex] = useState<{ index: number, part: 1 | 2 } | null>(null);
   const [remixes, setRemixes] = useState<Record<number, RemixData>>({});
   
   // Settings
   const [mode, setMode] = useState<'standard' | 'old'>('standard');
-  const [currentTheme, setCurrentTheme] = useState<string>('rose');
-  const [darkMode, setDarkMode] = useState<boolean>(() => {
-    const saved = localStorage.getItem('sso_dark_mode');
-    return saved !== null ? saved === 'true' : true;
-  });
+  const [currentTheme, setCurrentTheme] = useState<string>('cosmic');
+  const darkMode = true;
   const [showSettings, setShowSettings] = useState(false);
 
   // PWA / App Installation States
@@ -311,11 +323,7 @@ export default function NameGenerator() {
       <motion.div 
         variants={bgVariants}
         animate="animate"
-        className={`absolute inset-0 bg-gradient-to-br ${
-          darkMode 
-            ? 'from-[#0b0424] via-[#120a32] to-[#041221]' 
-            : 'from-[#fff5f5] via-[#f5f8ff] to-[#fffbfc]'
-        } bg-[length:400%_400%] -z-20 transition-all duration-1000`}
+        className={`absolute inset-0 bg-gradient-to-br ${theme.gradient} bg-[length:400%_400%] -z-20 transition-all duration-1000`}
       />
 
       {/* Liquid Glass / Shifting Aurora Effects */}
@@ -326,15 +334,11 @@ export default function NameGenerator() {
             custom={i}
             variants={blobVariants}
             animate="animate"
-            className={`absolute rounded-full mix-blend-screen filter blur-[100px] ${darkMode ? 'opacity-55' : 'opacity-40'}`}
+            className="absolute rounded-full mix-blend-screen filter blur-[100px] opacity-55"
             style={{
-              background: darkMode 
-                ? `radial-gradient(circle, ${
-                    i % 4 === 0 ? '#df1380' : i % 4 === 1 ? '#06b6d4' : i % 4 === 2 ? '#8b5cf6' : '#ff7e33'
-                  }, transparent)` 
-                : `radial-gradient(circle, ${
-                    i % 3 === 0 ? '#ffe4e6' : i % 3 === 1 ? '#e0f2fe' : '#f3e8ff'
-                  }, transparent)`,
+              background: `radial-gradient(circle, ${
+                theme.blobColors[i % theme.blobColors.length]
+              }, transparent)`,
               width: `${400 + Math.random() * 350}px`,
               height: `${400 + Math.random() * 350}px`,
               left: `${(i * 15 + Math.random() * 10) % 100}%`,
@@ -345,53 +349,57 @@ export default function NameGenerator() {
       </div>
 
       {/* Header / Controls */}
-      <div className="absolute top-4 right-4 z-50 flex gap-2">
-        {/* PWA Install Button */}
-        <motion.button
-          whileHover={{ scale: 1.1 }}
-          whileTap={{ scale: 0.9 }}
-          onClick={triggerPwaInstall}
-          title="Zainstaluj jako aplikację"
-          className={`px-4 py-3 rounded-full shadow-lg backdrop-blur-md transition-all border flex items-center gap-2 ${
-            darkMode 
-              ? 'bg-gradient-to-r from-pink-500/25 to-indigo-500/25 border-pink-500/30 text-pink-300 hover:from-pink-500/35 hover:to-indigo-500/35' 
-              : 'bg-white/60 border-rose-200 text-rose-500 hover:bg-rose-50'
-          }`}
-        >
-          <div className="relative">
-            <Download className="w-4 h-4 animate-bounce" />
-            {!isAppInstalled && (
-              <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-pink-500 ring-2 ring-white dark:ring-slate-900" />
-            )}
-          </div>
-          <span className="text-xs font-bold tracking-tight">Pobierz App</span>
-        </motion.button>
+      <div className="absolute top-4 left-4 right-4 z-50 flex flex-wrap gap-3 items-center justify-between">
+        {/* Direct Theme Selectors */}
+        <div className="flex items-center gap-1.5 p-1 rounded-2xl bg-slate-950/60 border border-white/5 backdrop-blur-md shadow-lg">
+          {Object.entries(THEMES).map(([key, t]) => {
+            const isActive = currentTheme === key;
+            return (
+              <button
+                key={key}
+                onClick={() => setCurrentTheme(key)}
+                className={`py-1.5 px-3 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${
+                  isActive
+                    ? 'bg-gradient-to-r ' + t.button + ' text-white shadow-md scale-[1.03]'
+                    : 'text-slate-400 hover:text-white hover:bg-white/5'
+                }`}
+              >
+                <span className="w-2 h-2 rounded-full" style={{ backgroundColor: t.accent.replace('bg-', '') }} />
+                <span>{t.name}</span>
+              </button>
+            );
+          })}
+        </div>
 
-        <motion.button
-          whileHover={{ scale: 1.1 }}
-          whileTap={{ scale: 0.9 }}
-          onClick={logoutKey}
-          title="Zmień API Key"
-          className={`p-3 rounded-full shadow-lg backdrop-blur-md transition-colors border ${darkMode ? 'bg-slate-800/50 border-slate-700 text-slate-300 hover:bg-slate-700' : 'bg-white/40 border-white/40 text-gray-500 hover:bg-white/60'}`}
-        >
-          <Key className="w-5 h-5" />
-        </motion.button>
-        <motion.button
-          whileHover={{ scale: 1.1 }}
-          whileTap={{ scale: 0.9 }}
-          onClick={() => setShowSettings(!showSettings)}
-          className={`p-3 rounded-full shadow-lg backdrop-blur-md transition-colors border ${darkMode ? 'bg-slate-800/50 border-slate-700 text-white hover:bg-slate-700' : 'bg-white/40 border-white/40 text-gray-700 hover:bg-white/60'}`}
-        >
-          <Palette className="w-5 h-5" />
-        </motion.button>
-        <motion.button
-          whileHover={{ scale: 1.1 }}
-          whileTap={{ scale: 0.9 }}
-          onClick={() => setDarkMode(!darkMode)}
-          className={`p-3 rounded-full shadow-lg backdrop-blur-md transition-colors border ${darkMode ? 'bg-slate-800/50 border-slate-700 text-yellow-400 hover:bg-slate-700' : 'bg-white/40 border-white/40 text-slate-700 hover:bg-white/60'}`}
-        >
-          {darkMode ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
-        </motion.button>
+        {/* Action Controls */}
+        <div className="flex gap-2">
+          {/* PWA Install Button */}
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={triggerPwaInstall}
+            title="Zainstaluj jako aplikację"
+            className="px-4 py-2.5 rounded-full shadow-lg backdrop-blur-md transition-all border flex items-center gap-2 bg-gradient-to-r from-pink-500/25 to-indigo-500/25 border-pink-500/30 text-pink-300 hover:from-pink-500/35 hover:to-indigo-500/35"
+          >
+            <div className="relative">
+              <Download className="w-4 h-4 animate-bounce" />
+              {!isAppInstalled && (
+                <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-pink-500 ring-2 ring-slate-950" />
+              )}
+            </div>
+            <span className="text-xs font-bold tracking-tight hidden sm:inline">Pobierz App</span>
+          </motion.button>
+
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={logoutKey}
+            title="Zmień API Key"
+            className="p-2.5 rounded-full shadow-lg backdrop-blur-md transition-colors border bg-slate-800/50 border-slate-700 text-slate-300 hover:bg-slate-700"
+          >
+            <Key className="w-4 h-4" />
+          </motion.button>
+        </div>
       </div>
 
       {/* Settings Panel */}
@@ -641,11 +649,7 @@ export default function NameGenerator() {
         >
           <motion.div 
             layout
-            className={`backdrop-blur-3xl border shadow-2xl rounded-[2.5rem] p-8 md:p-12 overflow-hidden relative transition-all duration-500 ${
-              darkMode 
-                ? 'bg-slate-950/20 border-white/10 shadow-[0_32px_64px_rgba(15,23,42,0.4)]' 
-                : 'bg-white/20 border-white/40 shadow-[0_32px_64px_rgba(31,38,135,0.06)]'
-            }`}
+            className={`backdrop-blur-3xl border shadow-2xl rounded-[2.5rem] p-8 md:p-12 overflow-hidden relative transition-all duration-500 ${theme.cardBg}`}
           >
             {/* Header Section */}
             <div className="text-center mb-10 relative z-10">
@@ -662,7 +666,7 @@ export default function NameGenerator() {
                 className={`w-24 h-24 mx-auto mb-6 flex items-center justify-center shadow-2xl rounded-3xl bg-gradient-to-br ${theme.button} transform -rotate-6 relative group cursor-pointer`}
               >
                 <div className="absolute inset-0 bg-white opacity-0 group-hover:opacity-20 rounded-3xl transition-opacity duration-300" />
-                <Crown className="w-12 h-12 text-white drop-shadow-md" />
+                <Sparkles className="w-12 h-12 text-white drop-shadow-md" />
               </motion.div>
               
               <h1 className={`text-4xl md:text-6xl font-bold font-display mb-4 tracking-tight ${darkMode ? 'text-white drop-shadow-lg' : 'text-gray-800'}`}>
