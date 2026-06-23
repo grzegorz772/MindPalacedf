@@ -351,21 +351,21 @@ export default function NameGenerator() {
       {/* Header / Controls */}
       <div className="absolute top-4 left-4 right-4 z-50 flex flex-wrap gap-3 items-center justify-between">
         {/* Direct Theme Selectors */}
-        <div className="flex items-center gap-1.5 p-1 rounded-2xl bg-slate-950/60 border border-white/5 backdrop-blur-md shadow-lg">
+        <div className="flex items-center gap-2 p-1.5 rounded-full bg-slate-950/60 border border-white/5 backdrop-blur-md shadow-lg">
           {Object.entries(THEMES).map(([key, t]) => {
             const isActive = currentTheme === key;
             return (
               <button
                 key={key}
                 onClick={() => setCurrentTheme(key)}
-                className={`py-1.5 px-3 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${
+                title={t.name}
+                className={`w-7 h-7 rounded-full transition-all p-0.5 relative flex items-center justify-center ${
                   isActive
-                    ? 'bg-gradient-to-r ' + t.button + ' text-white shadow-md scale-[1.03]'
-                    : 'text-slate-400 hover:text-white hover:bg-white/5'
+                    ? 'ring-2 ring-violet-400 ring-offset-2 ring-offset-slate-950 scale-110 shadow-lg'
+                    : 'hover:scale-[1.08] opacity-75 hover:opacity-100'
                 }`}
               >
-                <span className="w-2 h-2 rounded-full" style={{ backgroundColor: t.accent.replace('bg-', '') }} />
-                <span>{t.name}</span>
+                <div className={`w-full h-full rounded-full bg-gradient-to-br ${t.button.split(' hover:')[0]}`} />
               </button>
             );
           })}
@@ -924,13 +924,6 @@ export default function NameGenerator() {
                 </motion.div>
               )}
             </AnimatePresence>
-          </motion.div>
-          
-          <motion.div 
-            layout
-            className={`mt-8 text-center text-sm font-medium opacity-60 ${darkMode ? 'text-slate-500' : 'text-gray-500'}`}
-          >
-            Powered by Gemini AI • Actions Deployed • Design by Magic
           </motion.div>
         </motion.div>
       </div>

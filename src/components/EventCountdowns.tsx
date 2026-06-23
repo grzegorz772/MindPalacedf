@@ -402,7 +402,7 @@ export function EventCountdowns({ darkMode }: { darkMode: boolean }) {
               </div>
 
               {/* Countdown Numbers Grid */}
-              <div className="mt-4 pt-4 border-t border-current border-opacity-5">
+              <div className="mt-4 pt-1">
                 <p className="text-[10px] uppercase tracking-wider font-extrabold opacity-60 mb-2 font-mono">
                   {fest.isActive ? 'Do zakończenia:' : 'Czas do rozpoczęcia:'}
                 </p>
@@ -441,8 +441,8 @@ export function EventCountdowns({ darkMode }: { darkMode: boolean }) {
         {/* Secondary Events Section */}
         <div className="mt-8 grid grid-cols-1 sm:grid-cols-2 gap-4">
           {[
-            { id: 'camp_western', englishName: 'Camp Western', icon: TreeDeciduous, desc: 'Sierpień • Bory Firgrove i płukanie złota' },
-            { id: 'new_year', englishName: "New Year's Eve", icon: PartyPopper, desc: 'Koniec Grudnia • Zimowa Wioska i fajerwerki' },
+            { id: 'camp_western', englishName: 'Camp Western', icon: TreeDeciduous, desc: 'August • Firgrove wilderness & gold panning' },
+            { id: 'new_year', englishName: "New Year's Eve", icon: PartyPopper, desc: 'Late December • Winter Village & fireworks' },
           ].map((event, i) => {
             const IconComponent = event.icon;
             return (
